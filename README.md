@@ -88,3 +88,49 @@ js/
 ---
 
 Crafted with 💜 for little stars.
+
+
+---
+
+## 🔌 Connect a real backend (Firebase) — admin login + live stock
+
+The store works out of the box in **demo mode** (changes stay on your device). To get
+a **real admin login** and **stock/photos that update live for every visitor**, connect
+a free Firebase project. No build step required — Firebase loads from a CDN.
+
+### One-time setup (free)
+1. Go to **https://console.firebase.google.com** → **Add project**.
+2. Inside the project, click the **Web** icon (`</>`) to register a web app. Firebase shows
+   a `firebaseConfig` object — copy those values.
+3. Paste them into **`js/firebase-config.js`** (replace the empty `""` values), then commit.
+4. **Build → Firestore Database → Create database** (Production mode).
+5. **Build → Authentication → Sign-in method →** enable **Email/Password**.
+6. **Authentication → Users → Add user**: create your admin email + password.
+7. **Firestore → Rules** tab → paste the rules below → **Publish**:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /store/inventory {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /productImages/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+That's it. Now `#/admin` asks for your admin login, and the **Products** tab lets you set
+**live stock** and **upload photos** that instantly update for everyone.
+
+> Product photos are compressed in the browser and stored directly in Firestore (kept well
+> under the 1 MB document limit), so you don't need the paid Storage add-on.
+
+### Notes
+- The Firebase web config values are **not secret** — they're safe to commit publicly.
+  Security is enforced by the Firestore Rules above.
+- Until you fill in the config, everything keeps working in local demo mode.

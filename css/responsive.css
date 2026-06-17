@@ -1,0 +1,63 @@
+/* ============================================================
+   Wahh Kids — Responsive
+   ============================================================ */
+
+/* Large tablets / small laptops */
+@media (max-width: 1080px) {
+  .footer__inner { grid-template-columns: 1fr 1fr; gap: 1.6rem; }
+}
+
+/* Tablets */
+@media (max-width: 900px) {
+  .nav__links { display: none; }
+  .nav__burger { display: grid; }
+  .row2 { grid-template-columns: 1fr; }
+  .checkout-grid { grid-template-columns: 1fr !important; }
+  .product-grid { grid-template-columns: 1fr !important; }
+  .shop-layout { grid-template-columns: 1fr !important; }
+  .admin-layout { grid-template-columns: 1fr !important; }
+  .admin-sidebar { flex-direction: row !important; overflow-x: auto; }
+  .hide-tablet { display: none !important; }
+}
+
+/* Mobile drawer nav */
+.mobile-nav {
+  position: fixed; inset: 0; z-index: 120; background: rgba(29,18,64,.45); backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.mobile-nav.open { opacity: 1; pointer-events: auto; }
+.mobile-nav__panel {
+  position: absolute; top: 0; right: 0; height: 100%; width: min(320px, 86vw);
+  background: #fff; box-shadow: -20px 0 60px rgba(29,18,64,.25);
+  transform: translateX(100%); transition: transform .4s cubic-bezier(.2,.8,.2,1);
+  padding: 1.4rem; display: flex; flex-direction: column; gap: .4rem;
+}
+.mobile-nav.open .mobile-nav__panel { transform: translateX(0); }
+.mobile-nav a { padding: .9rem 1rem; border-radius: 14px; font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+.mobile-nav a:hover { background: rgba(108,76,241,.08); }
+
+/* Phones */
+@media (max-width: 640px) {
+  :root { --nav-h: 64px; }
+  .grid--products { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .head h2 { font-size: 1.9rem; }
+  .footer__inner { grid-template-columns: 1fr; }
+  .nav__inner { padding: .4rem .6rem; }
+  .brand { font-size: 1.15rem; }
+  .brand__mark { width: 32px; height: 32px; }
+  .icon-btn { width: 40px; height: 40px; }
+  .hero__title { font-size: 2.4rem !important; }
+  .stat-row { flex-wrap: wrap; }
+  .pcard__body { padding: .7rem .7rem 1rem; }
+  .pcard__title { font-size: .95rem; }
+  .toasts { left: 12px; right: 12px; bottom: 12px; }
+  .toast { min-width: 0; width: 100%; }
+  .chat-fab { width: 52px; height: 52px; bottom: 16px; left: 16px; }
+  .section { padding: 44px 0; }
+  .btn-row-mobile { flex-direction: column; align-items: stretch; }
+}
+
+/* very small */
+@media (max-width: 380px) {
+  .grid--products { grid-template-columns: 1fr; }
+}

@@ -1,7 +1,7 @@
 // ============================================================
 // Wahh Kids — Product detail page (3D 360 viewer + everything)
 // ============================================================
-import { byId, related, recommend, discountPct, formatINR } from '../data.js';
+import { byId, related, recommend, discountPct, formatINR, productImage } from '../data.js';
 import { store } from '../store.js';
 import { garmentSVG } from '../svg.js';
 import { productCardHTML, wireCards } from '../components/card.js';
@@ -25,6 +25,8 @@ export default function ProductPage(ctx) {
   }
   store.pushRecent(p.id);
   const disc = discountPct(p);
+  const photo = productImage(p.id);
+  const soldOut = p.stock <= 0;
   let selColor = p.colors[0];
   let selSize = p.sizes[Math.min(2, p.sizes.length - 1)];
   let qty = 1;
@@ -37,8 +39,8 @@ export default function ProductPage(ctx) {
       <div>
         <div class="card" style="position:relative;aspect-ratio:1;background:var(--grad-soft);overflow:hidden" id="viewerWrap">
           <div id="viewer3d" style="position:absolute;inset:0"></div>
-          <div id="viewerFallback" style="position:absolute;inset:0;display:grid;place-items:center;padding:10%">${garmentSVG(p.type, selColor.hex)}</div>
-          <div style="position:absolute;top:14px;left:14px" class="pill">🌀 Drag to rotate · Scroll to zoom</div>
+          <div id="viewerFallback" style="position:absolute;inset:0;display:grid;place-items:center;padding:${photo ? '0' : '10%'}">${photo ? `<img src="${photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>` : garmentSVG(p.type, selColor.hex)}</div>
+          <div style="position:absolute;top:14px;left:14px" class="pill">${photo ? '📷 Product photo' : '🌀 Drag to rotate · Scroll to zoom'}</div>
           <div style="position:absolute;bottom:14px;right:14px;display:flex;gap:.4rem">
             <button class="carousel__btn" id="btnRotate" title="Toggle auto-rotate">⏯️</button>
             <button class="carousel__btn" id="btnReset" title="Reset view">🎯</button>
@@ -87,14 +89,15 @@ export default function ProductPage(ctx) {
 
         <div style="display:flex;gap:.8rem;align-items:center;margin:1.4rem 0">
           <div class="qty"><button id="qDec">−</button><span id="qVal">1</span><button id="qInc">+</button></div>
-          <div class="pill" id="stockPill" style="background:${p.stock<10?'rgba(255,122,89,.15)':'rgba(63,224,176,.18)'};color:${p.stock<10?'#c9482b':'#0a8a64'}">
-            ${p.stock<10?`⚠️ Only ${p.stock} left!`:'✅ In stock'}
+          <div class="pill" id="stockPill" style="background:${soldOut?'rgba(154,160,181,.2)':p.stock<10?'rgba(255,122,89,.15)':'rgba(63,224,176,.18)'};color:${soldOut?'#5b6072':p.stock<10?'#c9482b':'#0a8a64'}">
+            ${soldOut?'🚫 Out of stock':p.stock<10?`⚠️ Only ${p.stock} left!`:'✅ In stock'}
           </div>
         </div>
 
         <div style="display:flex;gap:.8rem;flex-wrap:wrap" class="btn-row-mobile">
-          <button class="btn btn--lg" id="addCart" style="flex:1">Add to Cart 🛒</button>
-          <button class="btn btn--candy btn--lg" id="buyNow">Buy Now ⚡</button>
+          ${soldOut
+            ? '<button class="btn btn--lg" id="addCart" style="flex:1;background:#c8cad6;box-shadow:none" disabled>Out of stock</button>'
+            : '<button class="btn btn--lg" id="addCart" style="flex:1">Add to Cart 🛒</button><button class="btn btn--candy btn--lg" id="buyNow">Buy Now ⚡</button>'}
           <button class="icon-btn" id="favBtn" style="width:54px;height:54px;font-size:1.4rem">${store.inWishlist(p.id)?'💖':'🤍'}</button>
           <button class="icon-btn" id="cmpBtn" style="width:54px;height:54px;font-size:1.2rem" title="Compare">⚖️</button>
         </div>
@@ -146,7 +149,7 @@ export default function ProductPage(ctx) {
     qs('#colorName', node).textContent = c.name;
     qsa('#colorRow .swatch', node).forEach(s => s.classList.toggle('active', s.dataset.hex === c.hex));
     qsa('#thumbs button', node).forEach(b => b.style.outline = b.dataset.hex === c.hex ? '2px solid var(--grape)' : 'none');
-    qs('#viewerFallback', node).innerHTML = garmentSVG(p.type, c.hex);
+    if (!photo) qs('#viewerFallback', node).innerHTML = garmentSVG(p.type, c.hex);
     if (viewer && viewer.setColor) viewer.setColor(c.hex);
   }
 
@@ -164,8 +167,10 @@ export default function ProductPage(ctx) {
   qs('#qDec', node).addEventListener('click', () => { qty = Math.max(1, qty-1); qs('#qVal', node).textContent = qty; });
 
   const doAdd = () => { store.addToCart(p.id, selColor.name, selSize, qty); toast(`${p.name} added to cart`, 'ok', '🛒'); };
-  qs('#addCart', node).addEventListener('click', () => { doAdd(); window.dispatchEvent(new CustomEvent('open-cart')); });
-  qs('#buyNow', node).addEventListener('click', () => { doAdd(); navigate('/checkout'); });
+  const addBtn = qs('#addCart', node);
+  if (addBtn && !soldOut) addBtn.addEventListener('click', () => { doAdd(); window.dispatchEvent(new CustomEvent('open-cart')); });
+  const buyBtn = qs('#buyNow', node);
+  if (buyBtn) buyBtn.addEventListener('click', () => { doAdd(); navigate('/checkout'); });
   qs('#favBtn', node).addEventListener('click', (e) => {
     const on = store.toggleWishlist(p.id); e.currentTarget.textContent = on?'💖':'🤍';
     toast(on?'Added to wishlist 💖':'Removed from wishlist', on?'ok':'info');
@@ -220,16 +225,25 @@ export default function ProductPage(ctx) {
   // ---- 3D viewer mount ----
   let viewer = null;
   function onMount() {
-    initProduct360(qs('#viewer3d', node), p).then(v => {
-      viewer = v;
-      if (v) {
-        qs('#viewerFallback', node).style.display = 'none';
-        qs('#btnRotate', node).addEventListener('click', () => v.toggleAutoRotate());
-        qs('#btnReset', node).addEventListener('click', () => v.resetView());
-      }
-    }).catch(()=>{});
+    if (photo) {
+      // Real photo present → keep it, skip 3D, hide rotate/reset controls
+      const rb = qs('#btnRotate', node), rs = qs('#btnReset', node);
+      if (rb) rb.style.display = 'none';
+      if (rs) rs.style.display = 'none';
+    } else {
+      initProduct360(qs('#viewer3d', node), p).then(v => {
+        viewer = v;
+        if (v) {
+          qs('#viewerFallback', node).style.display = 'none';
+          qs('#btnRotate', node).addEventListener('click', () => v.toggleAutoRotate());
+          qs('#btnReset', node).addEventListener('click', () => v.resetView());
+        }
+      }).catch(()=>{});
+    }
     qs('#btnZoom', node).addEventListener('click', () => {
-      modal(`<h3>${p.name}</h3><div style="aspect-ratio:1;background:var(--grad-soft);border-radius:18px;display:grid;place-items:center;padding:8%">${garmentSVG(p.type, selColor.hex)}</div><p class="muted center" style="margin-top:.6rem">High-detail preview · ${selColor.name}</p>`, { width: 560 });
+      const big = photo ? `<img src="${photo}" alt="${p.name}" style="width:100%;border-radius:18px"/>`
+        : `<div style="aspect-ratio:1;background:var(--grad-soft);border-radius:18px;display:grid;place-items:center;padding:8%">${garmentSVG(p.type, selColor.hex)}</div>`;
+      modal(`<h3>${p.name}</h3>${big}<p class="muted center" style="margin-top:.6rem">${photo ? 'Product photo' : 'High-detail preview · ' + selColor.name}</p>`, { width: 560 });
     });
   }
   node._cleanup = () => { viewer?.destroy?.(); };

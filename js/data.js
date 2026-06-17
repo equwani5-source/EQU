@@ -163,3 +163,17 @@ export const INSTAGRAM = [
 ];
 
 export const formatINR = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+
+// ---- Product photos (uploaded via admin; overrides the SVG illustration) ----
+// Map of productId -> image data URL. Populated at runtime from Firebase or localStorage.
+export const PRODUCT_IMAGES = {};
+export const LOCAL_IMG_KEY = 'wahh_local_images_v1';
+export const LOCAL_INV_KEY = 'wahh_local_inventory_v1';
+export function productImage(id) { return PRODUCT_IMAGES[id] || null; }
+export function setProductImageLocal(id, url) {
+  if (url) PRODUCT_IMAGES[id] = url; else delete PRODUCT_IMAGES[id];
+}
+export function applyImages(map) {
+  if (!map) return;
+  for (const k of Object.keys(map)) { if (map[k]) PRODUCT_IMAGES[k] = map[k]; }
+}

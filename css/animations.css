@@ -1,0 +1,95 @@
+/* ============================================================
+   Wahh Kids — Animations & Effects
+   ============================================================ */
+
+/* Keyframes */
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes floaty-soft { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-9px) rotate(2deg); } }
+@keyframes bob { 0%,100% { transform: translateY(0) rotate(-3deg);} 50% { transform: translateY(-18px) rotate(3deg);} }
+@keyframes spinY { to { transform: rotateY(360deg); } }
+@keyframes ripple { to { transform: translate(-50%,-50%) scale(18); opacity: 0; } }
+@keyframes popIn { from { opacity: 0; transform: translateY(10px) scale(.96);} to { opacity: 1; transform: translateY(0) scale(1);} }
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px);} to { opacity: 1; transform: translateX(0);} }
+@keyframes annShift { to { background-position: 300% 0; } }
+@keyframes shimmer { to { background-position: 200% 0; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(34px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes fadeIn { from { opacity: 0;} to { opacity: 1;} }
+@keyframes scaleIn { from { opacity: 0; transform: scale(.9);} to { opacity: 1; transform: scale(1);} }
+@keyframes blob { 0%,100% { border-radius: 42% 58% 63% 37% / 42% 45% 55% 58%; } 50% { border-radius: 58% 42% 38% 62% / 58% 55% 45% 42%; } }
+@keyframes wiggle { 0%,100% { transform: rotate(-6deg);} 50% { transform: rotate(6deg);} }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1;} 50% { transform: scale(1.06); opacity: .85;} }
+@keyframes drift { from { transform: translateX(-10%);} to { transform: translateX(110%);} }
+@keyframes risebub { 0% { transform: translateY(0) scale(.6); opacity: 0;} 10% { opacity:.8;} 100% { transform: translateY(-120vh) scale(1.1); opacity: 0; } }
+@keyframes loadbar { from { width: 4%; } to { width: 100%; } }
+@keyframes twinkle { 0%,100% { opacity:.25; transform: scale(.8);} 50% { opacity:1; transform: scale(1.2);} }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Loader */
+.loader {
+  position: fixed; inset: 0; z-index: 999; display: grid; place-items: center;
+  background: radial-gradient(900px 600px at 50% 30%, #b9a4ff, #6c4cf1 70%);
+  transition: opacity .6s ease, visibility .6s;
+}
+.loader.hidden { opacity: 0; visibility: hidden; }
+.loader__mascot { text-align: center; color: #fff; }
+.mascot { width: 130px; height: 130px; margin: 0 auto 1.2rem; position: relative; animation: bob 2.4s ease-in-out infinite; }
+.mascot__star { font-size: 120px; line-height: 1; filter: drop-shadow(0 10px 24px rgba(0,0,0,.25)); }
+.mascot__face { position: absolute; inset: 0; display: grid; place-items: center; }
+.mascot__eye { position: absolute; width: 10px; height: 14px; background: #2a1a5e; border-radius: 50%; top: 46%; }
+.mascot__face .mascot__eye:nth-child(1) { left: 42px; }
+.mascot__face .mascot__eye:nth-child(2) { right: 42px; }
+.mascot__smile { position: absolute; top: 58%; width: 26px; height: 14px; border-bottom: 4px solid #2a1a5e; border-radius: 0 0 30px 30px; }
+.loader__brand { font-family: var(--font-display); font-weight: 800; font-size: 2.2rem; }
+.loader__brand span { color: #ffd84d; }
+.loader__bar { width: 220px; height: 8px; border-radius: 999px; background: rgba(255,255,255,.25); margin: 1rem auto .6rem; overflow: hidden; }
+.loader__bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg,#ffd84d,#ff7ec0); animation: loadbar 1.6s ease forwards; }
+.loader__hint { font-size: .85rem; opacity: .8; }
+
+/* Reveal on scroll */
+.reveal { opacity: 0; transform: translateY(34px); transition: opacity .7s cubic-bezier(.2,.8,.2,1), transform .7s cubic-bezier(.2,.8,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+.reveal.d1 { transition-delay: .08s; } .reveal.d2 { transition-delay: .16s; }
+.reveal.d3 { transition-delay: .24s; } .reveal.d4 { transition-delay: .32s; }
+.reveal.d5 { transition-delay: .40s; } .reveal.d6 { transition-delay: .48s; }
+
+/* Page transition */
+.app { animation: fadeUp .5s ease; }
+.page-leave { animation: fadeIn .2s reverse; }
+
+/* 3D tilt card */
+.tilt { transform-style: preserve-3d; transition: transform .2s ease; will-change: transform; }
+.tilt__inner { transform: translateZ(30px); }
+
+/* floaty helpers */
+.float-1 { animation: floaty 5s ease-in-out infinite; }
+.float-2 { animation: floaty-soft 6s ease-in-out infinite; }
+.float-3 { animation: bob 7s ease-in-out infinite; }
+
+/* shimmer skeleton */
+.skeleton { background: linear-gradient(90deg, #efe9ff 25%, #f7f3ff 37%, #efe9ff 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 12px; }
+
+/* Decorative blobs */
+.blob { position: absolute; filter: blur(6px); opacity: .5; animation: blob 9s ease-in-out infinite; z-index: -1; }
+
+/* Bubbles layer */
+.bubbles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.bubble { position: absolute; bottom: -60px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.9), rgba(63,200,255,.25)); box-shadow: inset 0 0 12px rgba(255,255,255,.6); animation: risebub linear infinite; }
+
+/* Stars layer */
+.stars-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.star-dot { position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; box-shadow: 0 0 8px #fff; animation: twinkle 3s ease-in-out infinite; }
+
+/* clouds */
+.cloud { position: absolute; background: #fff; border-radius: 100px; opacity: .85; filter: blur(.5px); animation: drift linear infinite; }
+.cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+
+/* marquee */
+.marquee { overflow: hidden; }
+.marquee__track { display: flex; gap: 3rem; width: max-content; animation: drift 26s linear infinite; animation-direction: normal; }
+
+/* spinner */
+.spinner { width: 26px; height: 26px; border: 3px solid rgba(108,76,241,.2); border-top-color: var(--grape); border-radius: 50%; animation: spin .8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

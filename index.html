@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#6c4cf1" />
+  <title>Wahh Kids — Magical Fashion for Little Stars</title>
+  <meta name="description" content="Wahh Kids — a premium, magical 3D fashion experience for children. Shop playful, luxurious kids clothing with immersive 3D, water animations and a world-class store experience." />
+  <meta name="keywords" content="kids clothing, children fashion, premium kids wear, Wahh Kids, baby clothes, toddler fashion" />
+
+  <!-- Open Graph / SEO -->
+  <meta property="og:title" content="Wahh Kids — Magical Fashion for Little Stars" />
+  <meta property="og:description" content="A premium 3D fashion world for kids and parents." />
+  <meta property="og:type" content="website" />
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%9F%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="./css/animations.css" />
+  <link rel="stylesheet" href="./css/responsive.css" />
+
+  <!-- Import map: load Three.js from CDN (no build step needed) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Loading screen -->
+  <div id="loader" class="loader">
+    <div class="loader__mascot">
+      <div class="mascot">
+        <div class="mascot__star">🌟</div>
+        <div class="mascot__face">
+          <span class="mascot__eye"></span>
+          <span class="mascot__eye"></span>
+          <span class="mascot__smile"></span>
+        </div>
+      </div>
+      <div class="loader__brand">Wahh<span>Kids</span></div>
+      <div class="loader__bar"><span id="loaderBar"></span></div>
+      <div class="loader__hint">Spinning up the magic…</div>
+    </div>
+  </div>
+
+  <!-- Announcement bar -->
+  <div id="announcement"></div>
+
+  <!-- Navbar -->
+  <header id="navbar"></header>
+
+  <!-- Page outlet -->
+  <main id="app" class="app"></main>
+
+  <!-- Footer -->
+  <footer id="footer"></footer>
+
+  <!-- Live chat widget -->
+  <div id="chat"></div>
+
+  <!-- Toast container -->
+  <div id="toasts" class="toasts"></div>
+
+  <!-- Cart drawer -->
+  <div id="cartDrawer"></div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

@@ -18,12 +18,13 @@
 // ============================================================
 
 export const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyA3RbkKBbdAtrAP5xqYQnpQZ4jY1scRpvE",
+  authDomain: "wahh-kids.firebaseapp.com",
+  projectId: "wahh-kids",
+  storageBucket: "wahh-kids.firebasestorage.app",
+  messagingSenderId: "344709993968",
+  appId: "1:344709993968:web:cb08d93f37585538c03935",
+  measurementId: "G-JXYCX337YE",
 };
 
 // Firebase SDK version loaded from the CDN (no install needed)

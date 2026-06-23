@@ -24,6 +24,17 @@ async function savePhoto(id, dataUrl) {
   }
 }
 
+// Turn raw Firebase errors into clear, actionable messages
+function fbErr(e, fallback) {
+  const code = (e && (e.code || e.message)) || '';
+  if (/permission-denied|insufficient/i.test(code))
+    return 'Blocked by your security rules. In Firestore → Rules, make sure the admin email matches the one you logged in with, then Publish.';
+  if (/unauthenticated/i.test(code)) return 'You were signed out — please log in again.';
+  if (/unavailable|network/i.test(code)) return 'Network issue — check your connection and try again.';
+  if (/quota|resource-exhausted/i.test(code)) return 'Database quota reached for now — try again later.';
+  return (fallback || 'Something went wrong') + (e && e.message ? ' (' + e.message + ')' : '');
+}
+
 const AKEY = 'wahh_admin_v1';
 function adminState() {
   try {
@@ -161,7 +172,7 @@ function prods(main) {
       if (firebaseEnabled) await setStock(p.id, qty);
       else persistLocalStock(p.id, qty);
       toast(`${p.name}: stock set to ${qty}${firebaseEnabled ? ' · live' : ''}`, 'ok');
-    } catch (e) { toast('Could not save stock', 'err'); }
+    } catch (e) { p.stock = qty; toast(fbErr(e, 'Could not save stock'), 'err'); }
   };
   const doUpload = async (p, file) => {
     if (!file) return;
@@ -169,11 +180,11 @@ function prods(main) {
       const dataUrl = await compressImage(file);
       await savePhoto(p.id, dataUrl);
       toast(`${p.name}: photo updated${firebaseEnabled ? ' · live' : ''} 📷`, 'ok'); draw();
-    } catch (e) { toast(e.message || 'Upload failed', 'err'); }
+    } catch (e) { toast(fbErr(e, 'Upload failed'), 'err'); }
   };
   const removePhoto = async (p) => {
     try { await savePhoto(p.id, null); toast('Photo removed', 'info'); draw(); }
-    catch (e) { toast('Could not remove photo', 'err'); }
+    catch (e) { toast(fbErr(e, 'Could not remove photo'), 'err'); }
   };
   const draw = () => {
     const list = PRODUCTS;
@@ -218,7 +229,7 @@ function prods(main) {
       seed.disabled = true; seed.textContent = 'Syncing…';
       const map = Object.fromEntries(PRODUCTS.map(p => [p.id, p.stock]));
       try { await seedInventory(map); toast('Catalog synced to database ✅', 'ok'); }
-      catch (e) { toast('Sync failed — check your setup', 'err'); }
+      catch (e) { toast(fbErr(e, 'Sync failed'), 'err'); }
       seed.disabled = false; seed.textContent = '⬆️ Sync catalog to database';
     });
   };

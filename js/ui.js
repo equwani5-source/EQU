@@ -70,12 +70,12 @@ export function attachRipples(root = document) {
 export function attachTilt(root = document) {
   qsa('[data-tilt]', root).forEach(card => {
     if (card._tilt) return; card._tilt = true;
-    const strength = 10;
+    const strength = card.classList.contains('coll-card') || card.classList.contains('cat-card') ? 8 : 13;
     card.addEventListener('pointermove', (e) => {
       const r = card.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width - 0.5;
       const py = (e.clientY - r.top) / r.height - 0.5;
-      card.style.transform = `perspective(800px) rotateY(${px * strength}deg) rotateX(${-py * strength}deg) translateY(-6px)`;
+      card.style.transform = `perspective(900px) rotateY(${px * strength}deg) rotateX(${-py * strength}deg) translateY(-6px)`;
     });
     card.addEventListener('pointerleave', () => { card.style.transform = ''; });
   });
@@ -134,3 +134,34 @@ export function countdown(targetMs, onTick) {
 }
 
 export const pad2 = (n) => String(n).padStart(2, '0');
+
+// ---------- Client-side image compression (for admin photo upload) ----------
+// Resizes + compresses to keep it well under Firestore's 1MB doc limit.
+export function compressImage(file, maxDim = 760, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) { reject(new Error('Please choose an image file')); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read the file'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That image could not be loaded'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+        else if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        // step down quality if still large (~700KB cap to stay safe)
+        let q = quality;
+        while (dataUrl.length > 700000 && q > 0.4) { q -= 0.1; dataUrl = canvas.toDataURL('image/jpeg', q); }
+        resolve(dataUrl);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}

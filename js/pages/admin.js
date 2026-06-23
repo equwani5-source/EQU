@@ -2,8 +2,27 @@
 // Wahh Kids — Admin dashboard
 // ============================================================
 import { store } from '../store.js';
-import { PRODUCTS, CATEGORIES, COUPONS, formatINR, discountPct } from '../data.js';
-import { el, qs, qsa, toast, modal } from '../ui.js';
+import { PRODUCTS, CATEGORIES, COUPONS, formatINR, discountPct, productImage, setProductImageLocal, LOCAL_IMG_KEY, LOCAL_INV_KEY } from '../data.js';
+import { garmentSVG } from '../svg.js';
+import { el, qs, qsa, toast, modal, compressImage } from '../ui.js';
+import { firebaseEnabled, authReady, currentAdmin, adminLogin, adminLogout, setStock, seedInventory, setProductImage, removeProductImage } from '../firebase.js';
+
+// Persist an uploaded photo in the right place for the current mode
+function saveLocalImage(id, dataUrl) {
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem(LOCAL_IMG_KEY) || '{}'); } catch {}
+  if (dataUrl) map[id] = dataUrl; else delete map[id];
+  try { localStorage.setItem(LOCAL_IMG_KEY, JSON.stringify(map)); }
+  catch (e) { toast('Image too large for local storage — connect Firebase', 'err'); }
+}
+async function savePhoto(id, dataUrl) {
+  setProductImageLocal(id, dataUrl);
+  if (firebaseEnabled) {
+    if (dataUrl) await setProductImage(id, dataUrl); else await removeProductImage(id);
+  } else {
+    saveLocalImage(id, dataUrl);
+  }
+}
 
 const AKEY = 'wahh_admin_v1';
 function adminState() {
@@ -22,26 +41,74 @@ function adminState() {
 }
 function saveAdmin(a) { localStorage.setItem(AKEY, JSON.stringify(a)); }
 
-export default function AdminPage(ctx) {
+export default async function AdminPage(ctx) {
   const tab = ctx.params.tab || 'dashboard';
+  // Real backend connected → require admin login
+  if (firebaseEnabled) {
+    let user = null;
+    try { await authReady(); user = await currentAdmin(); } catch (e) { console.warn(e); }
+    if (!user) return { node: adminLoginView(), title: 'Admin login' };
+    return { node: dashboardShell(tab, user), title: 'Admin' };
+  }
+  // No backend yet → local demo console
+  return { node: dashboardShell(tab, null), title: 'Admin' };
+}
+
+function adminLoginView() {
+  const node = el(`<div class="page-pad"><div class="container">
+    <div class="card glass auth-card">
+      <div class="center" style="margin-bottom:1rem"><div style="font-size:2.6rem">🛠️</div><h2 style="margin:.2rem 0">Admin Login</h2><p class="muted">Sign in with your store admin account to manage products &amp; live stock.</p></div>
+      <div class="field"><label>Admin email</label><input id="ae" type="email" placeholder="admin@email.com" autocomplete="username"/></div>
+      <div class="field"><label>Password</label><input id="ap" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+      <button class="btn btn--block" id="adminLoginBtn">Sign in 🔑</button>
+      <p class="muted center" style="font-size:.8rem;margin-top:.9rem">Create this account in Firebase → Authentication → Users.</p>
+      <p class="center" style="margin-top:.6rem"><a href="#/" style="color:var(--grape-deep);text-decoration:underline;font-size:.9rem">← Back to store</a></p>
+    </div>
+  </div></div>`);
+  const btn = qs('#adminLoginBtn', node);
+  const submit = async () => {
+    const email = qs('#ae', node).value.trim(), pass = qs('#ap', node).value;
+    if (!email || !pass) { toast('Enter your email and password', 'err'); return; }
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    const r = await adminLogin(email, pass);
+    btn.disabled = false; btn.textContent = 'Sign in 🔑';
+    if (r.ok) { toast('Welcome, admin! 🛠️', 'ok'); location.hash = '/admin'; window.dispatchEvent(new HashChangeEvent('hashchange')); }
+    else toast(r.msg || 'Login failed', 'err');
+  };
+  btn.addEventListener('click', submit);
+  qs('#ap', node).addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  return node;
+}
+
+function dashboardShell(tab, user) {
   const a = adminState();
   const NAV = [
     ['dashboard','📊 Dashboard'],['products','👕 Products'],['categories','🗂️ Categories'],
     ['orders','📦 Orders'],['users','👥 Customers'],['coupons','🎟️ Coupons'],['banners','📢 Banners'],
   ];
+  const statusPill = firebaseEnabled
+    ? `<span class="pill" style="background:rgba(63,224,176,.18);color:#0a8a64">🟢 Connected · live</span>`
+    : `<span class="pill">Demo · stored locally</span>`;
   const node = el(`<div class="page-pad"><div class="container">
     <div class="breadcrumb"><a href="#/">Home</a> <span>/</span> <strong>Admin</strong></div>
-    <div class="section__head"><h1 style="margin:0">Admin Console 🛠️</h1><span class="pill">Demo · data stored locally</span></div>
+    <div class="section__head"><h1 style="margin:0">Admin Console 🛠️</h1>${statusPill}</div>
+    ${firebaseEnabled ? '' : `<div class="card" style="padding:1rem 1.2rem;margin:1rem 0;border-left:5px solid var(--sun);background:#fffaf0">
+      <strong>You're in demo mode.</strong> <span class="muted">Changes here stay on this device only. To make stock update live for all visitors, connect Firebase (ask the builder or see README).</span></div>`}
     <div class="admin-layout" style="margin-top:1.2rem">
-      <aside class="card admin-sidebar">${NAV.map(([t,l])=>`<button data-go="${t}" class="${t===tab?'active':''}">${l}</button>`).join('')}</aside>
+      <aside class="card admin-sidebar">
+        ${NAV.map(([t,l])=>`<button data-go="${t}" class="${t===tab?'active':''}">${l}</button>`).join('')}
+        ${user ? `<div style="padding:.6rem 1rem;border-top:1px solid rgba(108,76,241,.12);margin-top:.4rem"><div class="muted" style="font-size:.75rem">Signed in</div><div style="font-size:.82rem;font-weight:700;word-break:break-all">${user.email}</div></div><button id="adminLogout">🚪 Log out</button>` : ''}
+      </aside>
       <div id="adminMain"></div>
     </div>
   </div></div>`);
   qsa('[data-go]', node).forEach(b => b.addEventListener('click', () => location.hash = '/admin/' + b.dataset.go));
+  const lo = qs('#adminLogout', node);
+  if (lo) lo.addEventListener('click', async () => { await adminLogout(); toast('Logged out', 'info'); location.hash = '/admin'; window.dispatchEvent(new HashChangeEvent('hashchange')); });
 
   const main = qs('#adminMain', node);
   ({ dashboard: dash, products: prods, categories: cats, orders: ords, users: usrs, coupons: cps, banners: bnr }[tab] || dash)(main, a);
-  return { node, title: 'Admin' };
+  return node;
 }
 
 function dash(main, a) {
@@ -82,36 +149,77 @@ function dash(main, a) {
   requestAnimationFrame(() => qsa('.bar', main).forEach(b => { const h = b.style.height; b.style.height='0'; requestAnimationFrame(()=>b.style.height=h); }));
 }
 
-function prods(main, a) {
+function prods(main) {
+  const persistLocalStock = (id, qty) => {
+    let map = {}; try { map = JSON.parse(localStorage.getItem(LOCAL_INV_KEY) || '{}'); } catch {}
+    map[id] = qty; try { localStorage.setItem(LOCAL_INV_KEY, JSON.stringify(map)); } catch {}
+  };
+  const writeStock = async (p, qty) => {
+    qty = Math.max(0, qty | 0);
+    p.stock = qty; draw();
+    try {
+      if (firebaseEnabled) await setStock(p.id, qty);
+      else persistLocalStock(p.id, qty);
+      toast(`${p.name}: stock set to ${qty}${firebaseEnabled ? ' · live' : ''}`, 'ok');
+    } catch (e) { toast('Could not save stock', 'err'); }
+  };
+  const doUpload = async (p, file) => {
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file);
+      await savePhoto(p.id, dataUrl);
+      toast(`${p.name}: photo updated${firebaseEnabled ? ' · live' : ''} 📷`, 'ok'); draw();
+    } catch (e) { toast(e.message || 'Upload failed', 'err'); }
+  };
+  const removePhoto = async (p) => {
+    try { await savePhoto(p.id, null); toast('Photo removed', 'info'); draw(); }
+    catch (e) { toast('Could not remove photo', 'err'); }
+  };
   const draw = () => {
-    main.innerHTML = `<div class="section__head"><h2 style="margin:0">Products (${a.products.length})</h2><button class="btn btn--sm" id="addP">+ Add product</button></div>
+    const list = PRODUCTS;
+    const modeNote = firebaseEnabled
+      ? 'Changes update <strong>instantly for every visitor</strong>.'
+      : 'Demo mode: changes show on <strong>this device</strong> only. Connect Firebase to go live for everyone.';
+    main.innerHTML = `<div class="section__head"><h2 style="margin:0">Products &amp; stock (${list.length})</h2>
+        ${firebaseEnabled ? '<button class="btn btn--ghost btn--sm" id="seedBtn">⬆️ Sync catalog to database</button>' : ''}</div>
+      <p class="muted" style="margin:.4rem 0 0">${modeNote} Set stock to <strong>0</strong> to mark a product out of stock. Upload a photo to replace the illustration.</p>
       <div class="card" style="padding:0;overflow:auto;margin-top:1rem"><table class="tbl">
-        <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Sold</th><th></th></tr></thead>
-        <tbody>${a.products.map((p,i)=>`<tr>
-          <td><strong>${p.name}</strong></td><td>${p.category}</td><td>${formatINR(p.price)}</td>
-          <td><span class="chip-status" style="background:${p.stock<10?'rgba(255,122,89,.15);color:#c9482b':'rgba(63,224,176,.18);color:#0a8a64'}">${p.stock}</span></td>
-          <td>${p.sold}</td>
-          <td style="text-align:right;white-space:nowrap"><button class="btn btn--ghost btn--sm" data-edit="${i}">Edit</button> <button class="btn btn--ghost btn--sm" data-del="${i}">🗑️</button></td>
+        <thead><tr><th>Photo</th><th>Product</th><th>Price</th><th>Stock</th></tr></thead>
+        <tbody>${list.map((p) => `<tr data-id="${p.id}">
+          <td>
+            <div class="cart-line__media" style="width:56px;height:66px;margin-bottom:.35rem">${productImage(p.id) ? `<img src="${productImage(p.id)}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>` : garmentSVG(p.type, p.colors[0].hex)}</div>
+            <input type="file" accept="image/*" data-file hidden/>
+            <button class="btn btn--ghost btn--sm" data-upload>${productImage(p.id) ? '📷 Change' : '📷 Upload'}</button>
+            ${productImage(p.id) ? '<button data-rmphoto class="muted" style="display:block;font-size:.74rem;text-decoration:underline;margin-top:.25rem">Remove</button>' : ''}
+          </td>
+          <td><strong>${p.name}</strong><div class="muted" style="font-size:.78rem">${p.category}</div></td>
+          <td>${formatINR(p.price)}</td>
+          <td><div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap">
+            <div class="qty"><button data-dec>−</button><span>${p.stock}</span><button data-inc>+</button></div>
+            <input data-stockinput type="number" min="0" value="${p.stock}" style="width:70px;padding:.4rem;border-radius:8px;border:1px solid rgba(108,76,241,.2)"/>
+            <button class="btn btn--sm" data-save>Set</button>
+            ${p.stock <= 0 ? '<span class="chip-status" style="background:rgba(255,122,89,.15);color:#c9482b">Out</span>' : p.stock < 10 ? '<span class="chip-status" style="background:rgba(255,207,63,.2);color:#9a6b00">Low</span>' : ''}
+          </div></td>
         </tr>`).join('')}</tbody>
       </table></div>`;
-    qs('#addP', main).addEventListener('click', () => editProduct(-1));
-    qsa('[data-edit]', main).forEach(b=>b.addEventListener('click',()=>editProduct(+b.dataset.edit)));
-    qsa('[data-del]', main).forEach(b=>b.addEventListener('click',()=>{ a.products.splice(+b.dataset.del,1); saveAdmin(a); toast('Product deleted','info'); draw(); }));
-  };
-  const editProduct = (i) => {
-    const p = i>=0 ? a.products[i] : { name:'', category:'boys', price:799, stock:20, sold:0, type:'tshirt' };
-    const { overlay, close } = modal(`<h3>${i>=0?'Edit':'Add'} product</h3>
-      <div class="field"><label>Name</label><input id="pn" value="${p.name}"/></div>
-      <div class="row2"><div class="field"><label>Category</label><select id="pc">${CATEGORIES.map(c=>`<option ${c.slug===p.category?'selected':''}>${c.slug}</option>`).join('')}</select></div>
-      <div class="field"><label>Type</label><input id="pt" value="${p.type}"/></div></div>
-      <div class="row2"><div class="field"><label>Price (₹)</label><input id="pp" type="number" value="${p.price}"/></div>
-      <div class="field"><label>Stock</label><input id="ps" type="number" value="${p.stock}"/></div></div>
-      <button class="btn btn--block" id="savP">Save</button>`);
-    overlay.querySelector('#savP').addEventListener('click', () => {
-      const np = { ...p, name:overlay.querySelector('#pn').value.trim(), category:overlay.querySelector('#pc').value, type:overlay.querySelector('#pt').value.trim(), price:+overlay.querySelector('#pp').value, stock:+overlay.querySelector('#ps').value };
-      if (!np.name) { toast('Name required','err'); return; }
-      if (i>=0) a.products[i]=np; else { np.id='wkX'+Date.now(); a.products.unshift(np); }
-      saveAdmin(a); close(); toast('Saved ✨','ok'); draw();
+
+    qsa('tr[data-id]', main).forEach(row => {
+      const p = PRODUCTS.find(x => x.id === row.dataset.id); if (!p) return;
+      row.querySelector('[data-inc]').addEventListener('click', () => writeStock(p, p.stock + 1));
+      row.querySelector('[data-dec]').addEventListener('click', () => writeStock(p, p.stock - 1));
+      row.querySelector('[data-save]').addEventListener('click', () => writeStock(p, +row.querySelector('[data-stockinput]').value));
+      const fileInput = row.querySelector('[data-file]');
+      row.querySelector('[data-upload]').addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => doUpload(p, fileInput.files[0]));
+      const rm = row.querySelector('[data-rmphoto]'); if (rm) rm.addEventListener('click', () => removePhoto(p));
+    });
+    const seed = qs('#seedBtn', main);
+    if (seed) seed.addEventListener('click', async () => {
+      seed.disabled = true; seed.textContent = 'Syncing…';
+      const map = Object.fromEntries(PRODUCTS.map(p => [p.id, p.stock]));
+      try { await seedInventory(map); toast('Catalog synced to database ✅', 'ok'); }
+      catch (e) { toast('Sync failed — check your setup', 'err'); }
+      seed.disabled = false; seed.textContent = '⬆️ Sync catalog to database';
     });
   };
   draw();

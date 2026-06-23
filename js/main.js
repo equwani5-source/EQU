@@ -5,6 +5,21 @@ import { route, startRouter, navigate } from './router.js';
 import { store } from './store.js';
 import { observeReveals, attachRipples, attachTilt } from './ui.js';
 import { mountLayout, refreshChrome, setActiveNav } from './components/layout.js';
+import { PRODUCTS, applyImages, setProductImageLocal, LOCAL_IMG_KEY, LOCAL_INV_KEY } from './data.js';
+import { firebaseEnabled, getInventory, watchInventory, getImages, watchImages } from './firebase.js';
+
+function loadLocalImages() {
+  try {
+    const raw = localStorage.getItem(LOCAL_IMG_KEY);
+    if (raw) applyImages(JSON.parse(raw));
+  } catch {}
+}
+function loadLocalInventory() {
+  try {
+    const raw = localStorage.getItem(LOCAL_INV_KEY);
+    if (raw) applyInventory(JSON.parse(raw));
+  } catch {}
+}
 
 // Pages
 import HomePage from './pages/home.js';
@@ -85,13 +100,56 @@ function hideLoader() {
   }
 }
 
+// ---- Live inventory (Firebase) ----
+function applyInventory(inv) {
+  if (!inv) return;
+  for (const p of PRODUCTS) {
+    if (inv[p.id] != null) p.stock = inv[p.id];
+  }
+}
+function rerenderCurrent() {
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
+}
+
 // Boot
-function boot() {
+async function boot() {
   mountLayout();
   attachRipples(document);
+
+  // If a real backend is connected, load live stock BEFORE first render
+  if (firebaseEnabled) {
+    try {
+      const [inv, imgs] = await Promise.all([
+        Promise.race([getInventory(), new Promise((r) => setTimeout(() => r(null), 4500))]),
+        Promise.race([getImages(), new Promise((r) => setTimeout(() => r(null), 4500))]),
+      ]);
+      applyInventory(inv);
+      applyImages(imgs);
+    } catch (e) { console.warn('backend preload failed', e); }
+  } else {
+    loadLocalImages();
+    loadLocalInventory();
+  }
+
   startRouter(onRoute);
   // react to store changes (cart/wishlist counts, auth)
   store.subscribe(() => refreshChrome());
+
+  // subscribe to live stock + image changes (skip the first snapshot — already applied)
+  if (firebaseEnabled) {
+    let firstInv = true, firstImg = true;
+    watchInventory((inv) => {
+      applyInventory(inv);
+      if (firstInv) { firstInv = false; return; }
+      rerenderCurrent();
+    }).catch((e) => console.warn('inventory watch failed', e));
+    watchImages((imgs) => {
+      applyImages(imgs);
+      if (firstImg) { firstImg = false; return; }
+      rerenderCurrent();
+    }).catch((e) => console.warn('image watch failed', e));
+  }
+
   // hide loader after first paint + min delay for the magic
   const start = performance.now();
   const finish = () => {

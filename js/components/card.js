@@ -2,10 +2,16 @@
 // Wahh Kids — Product card component
 // ============================================================
 import { store } from '../store.js';
-import { discountPct, formatINR } from '../data.js';
+import { discountPct, formatINR, productImage } from '../data.js';
 import { garmentSVG } from '../svg.js';
 import { starRow, toast } from '../ui.js';
 import { navigate } from '../router.js';
+
+export function mediaInner(p, hex) {
+  const img = productImage(p.id);
+  if (img) return `<img class="pcard__photo" src="${img}" alt="${p.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>`;
+  return garmentSVG(p.type, hex);
+}
 
 export function productCardHTML(p, opts = {}) {
   const disc = discountPct(p);
@@ -17,14 +23,17 @@ export function productCardHTML(p, opts = {}) {
   }).join('');
   const swatches = p.colors.slice(0, 4).map((c, i) =>
     `<span class="swatch ${i === 0 ? 'active' : ''}" data-color="${c.hex}" style="background:${c.hex}" title="${c.name}"></span>`).join('');
+  const soldOut = p.stock <= 0;
+  const oosBadge = soldOut ? '<span class="badge" style="background:#9aa0b5">Sold out</span>' : '';
 
-  return `<article class="card pcard reveal" data-id="${p.id}" data-tilt>
+  return `<article class="card pcard reveal ${soldOut ? 'is-soldout' : ''}" data-id="${p.id}" data-tilt>
     <div class="pcard__media" data-media>
-      <div class="pcard__badges">${badges}</div>
+      <div class="pcard__badges">${oosBadge}${badges}</div>
       <button class="pcard__fav ${fav ? 'active' : ''}" data-fav title="Wishlist">${fav ? '💖' : '🤍'}</button>
-      <a class="pcard__link" href="#/product/${p.id}" aria-label="${p.name}">${garmentSVG(p.type, p.colors[0].hex)}</a>
+      <a class="pcard__link" href="#/product/${p.id}" aria-label="${p.name}">${mediaInner(p, p.colors[0].hex)}</a>
       <div class="pcard__quick">
-        <button class="btn btn--block btn--sm" data-add>Add to Cart 🛒</button>
+        ${soldOut ? '<button class="btn btn--block btn--sm" disabled style="background:#c8cad6;box-shadow:none">Sold out</button>'
+                  : '<button class="btn btn--block btn--sm" data-add>Add to Cart 🛒</button>'}
       </div>
     </div>
     <div class="pcard__body">
@@ -54,7 +63,7 @@ export function wireCards(root, products) {
         card.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
         sw.classList.add('active');
         const media = card.querySelector('[data-media] .pcard__link');
-        if (media) media.innerHTML = garmentSVG(p.type, chosen);
+        if (media && !productImage(p.id)) media.innerHTML = garmentSVG(p.type, chosen);
       });
     });
 

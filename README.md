@@ -117,8 +117,35 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
     match /productImages/{id} {
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only YOUR admin account may write. Replace the email below.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'YOUR_ADMIN_EMAIL';
+    }
+
+    // Live stock: anyone can read; only admin can write a valid map
+    match /store/inventory {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin() && request.resource.data.stock is map;
+    }
+
+    // Product photos: anyone can read; admin can write a size-limited image string
+    match /productImages/{id} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.dataUrl is string
+        && request.resource.data.dataUrl.size() < 1000000;
+      allow delete: if isAdmin();
+    }
+
+    // Lock everything else by default
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
@@ -133,4 +160,8 @@ That's it. Now `#/admin` asks for your admin login, and the **Products** tab let
 ### Notes
 - The Firebase web config values are **not secret** — they're safe to commit publicly.
   Security is enforced by the Firestore Rules above.
+- **Replace `YOUR_ADMIN_EMAIL`** in the rules with the exact email you created in
+  Authentication → Users. Only that account can change stock/photos; the public can only read.
+- Optional hardening: in Google Cloud Console → APIs & Services → Credentials, restrict the
+  browser API key to your domains (e.g. `*.github.io`) to stop other sites using your project.
 - Until you fill in the config, everything keeps working in local demo mode.

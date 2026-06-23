@@ -70,12 +70,12 @@ export function attachRipples(root = document) {
 export function attachTilt(root = document) {
   qsa('[data-tilt]', root).forEach(card => {
     if (card._tilt) return; card._tilt = true;
-    const strength = 10;
+    const strength = card.classList.contains('coll-card') || card.classList.contains('cat-card') ? 8 : 13;
     card.addEventListener('pointermove', (e) => {
       const r = card.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width - 0.5;
       const py = (e.clientY - r.top) / r.height - 0.5;
-      card.style.transform = `perspective(800px) rotateY(${px * strength}deg) rotateX(${-py * strength}deg) translateY(-6px)`;
+      card.style.transform = `perspective(900px) rotateY(${px * strength}deg) rotateX(${-py * strength}deg) translateY(-6px)`;
     });
     card.addEventListener('pointerleave', () => { card.style.transform = ''; });
   });

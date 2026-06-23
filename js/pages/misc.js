@@ -206,7 +206,7 @@ export function LookbookPage() {
     <div class="breadcrumb"><a href="#/">Home</a> <span>/</span> <strong>Lookbook</strong></div>
     <div class="head"><span class="eyebrow">📸 Editorial</span><h1>The Wahh <span class="gtext">Lookbook</span></h1><p>Styled stories to inspire every adventure.</p></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;grid-auto-rows:240px">
-      ${looks.map((l,i)=>`<a class="coll-card reveal d${(i%4)+1}" href="${l.link}" style="${l.span||''};background:linear-gradient(160deg,${l.color},#fff);min-height:0">
+      ${looks.map((l,i)=>`<a class="coll-card reveal d${(i%4)+1}" data-tilt href="${l.link}" style="${l.span||''};background:linear-gradient(160deg,${l.color},#fff);min-height:0">
         <span class="emoji">${l.emoji}</span>
         <div class="coll-card__body"><h3 style="font-size:1.5rem">${l.title}</h3><p style="opacity:.95">${l.sub}</p><span style="font-weight:800;text-decoration:underline">Shop the look →</span></div>
       </a>`).join('')}

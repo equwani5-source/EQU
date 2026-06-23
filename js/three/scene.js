@@ -61,7 +61,7 @@ export async function initHero(container) {
   mouseLight.position.set(0, 4, 10);
   scene.add(mouseLight);
 
-  const groups = { float: [], balloons: [], clouds: [], bubbles: [] };
+  const groups = { float: [], balloons: [], clouds: [], bubbles: [], orbiters: [] };
 
   // ---- Water plane (custom shader) ----
   const waterGeo = new T.PlaneGeometry(120, 90, 80, 60);
@@ -179,6 +179,53 @@ export async function initHero(container) {
   const sparkles = new T.Points(pg, new T.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.8, sizeAttenuation: true }));
   scene.add(sparkles);
 
+  // ---- 3D centerpiece: a real spinning garment + orbiting shapes ----
+  const centerGroup = new T.Group();
+  centerGroup.position.set(6.5, 1.8, 1.5);
+  scene.add(centerGroup);
+
+  const heroShape = garmentShape(T, 'dress');
+  const heroGeo = new T.ExtrudeGeometry(heroShape, { depth: 0.6, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.2, bevelSegments: 5, steps: 1 });
+  heroGeo.center();
+  const heroMat = new T.MeshStandardMaterial({ color: 0xff5fa2, roughness: 0.32, metalness: 0.18, emissive: 0x3a0d22, emissiveIntensity: 0.25 });
+  const heroMesh = new T.Mesh(heroGeo, heroMat);
+  heroMesh.scale.setScalar(2.2);
+  centerGroup.add(heroMesh);
+
+  // soft glow ring behind the centerpiece
+  const halo = new T.Mesh(new T.RingGeometry(2.6, 3.1, 48),
+    new T.MeshBasicMaterial({ color: 0x9b86ff, transparent: true, opacity: 0.28, side: T.DoubleSide }));
+  halo.position.z = -1.2; centerGroup.add(halo);
+
+  function starShape() {
+    const s = new T.Shape(); const spikes = 5, outer = 0.62, inner = 0.27;
+    for (let i = 0; i < spikes * 2; i++) {
+      const r = i % 2 ? inner : outer; const a = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+      const x = Math.cos(a) * r, y = Math.sin(a) * r; i ? s.lineTo(x, y) : s.moveTo(x, y);
+    }
+    s.closePath(); return s;
+  }
+  const starGeo = new T.ExtrudeGeometry(starShape(), { depth: 0.22, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 });
+  starGeo.center();
+  const oColors = [0xffcf3f, 0x3fc8ff, 0x3fe0b0, 0x6c4cf1, 0xff7a59, 0xffffff];
+  for (let i = 0; i < 6; i++) {
+    let m; const pick = i % 3; const col = oColors[i % oColors.length];
+    if (pick === 0) m = new T.Mesh(starGeo, new T.MeshStandardMaterial({ color: col, roughness: 0.3, metalness: 0.25 }));
+    else if (pick === 1) m = new T.Mesh(new T.TorusGeometry(0.5, 0.17, 16, 32), new T.MeshStandardMaterial({ color: col, roughness: 0.22, metalness: 0.35 }));
+    else m = new T.Mesh(new T.BoxGeometry(0.66, 0.66, 0.66), new T.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.12 }));
+    m.userData = { orbR: 3 + (i % 3) * 0.7, orbA: i * 1.05, orbS: 0.35 + (i % 4) * 0.12, tilt: i * 0.5, spin: 0.6 + Math.random() };
+    centerGroup.add(m); groups.orbiters.push(m);
+  }
+
+  // sparkle plus-sign particles already added; add a couple of small 3D rings drifting in depth
+  const depthRings = [];
+  for (let i = 0; i < 3; i++) {
+    const ring = new T.Mesh(new T.TorusGeometry(1.4 + i * 0.6, 0.05, 12, 48),
+      new T.MeshBasicMaterial({ color: [0x6c4cf1, 0x3fc8ff, 0xff5fa2][i], transparent: true, opacity: 0.35 }));
+    ring.position.set((i - 1) * 5, 3 + i, -8 - i * 2);
+    ring.rotation.x = Math.PI / 3; scene.add(ring); depthRings.push(ring);
+  }
+
   // ---- Interaction ----
   const mouse = new T.Vector2(0, 0);
   const target = new T.Vector2(0, 0);
@@ -229,6 +276,20 @@ export async function initHero(container) {
       g.position.y = g.userData.base + Math.sin(t * g.userData.sp + g.userData.ph) * 1.2;
       g.rotation.z = Math.sin(t * 0.6 + g.userData.ph) * 0.12;
     });
+
+    // 3D centerpiece
+    centerGroup.rotation.y = mouse.x * 0.4 + Math.sin(t * 0.2) * 0.15;
+    centerGroup.position.y = 1.8 + Math.sin(t * 0.8) * 0.25;
+    heroMesh.rotation.y = t * 0.5;
+    halo.rotation.z = t * 0.3;
+    halo.material.opacity = 0.22 + Math.sin(t * 1.5) * 0.08;
+    groups.orbiters.forEach((m) => {
+      const a = m.userData.orbA + t * m.userData.orbS;
+      m.position.set(Math.cos(a) * m.userData.orbR, Math.sin(t * 0.8 + m.userData.tilt) * 0.9, Math.sin(a) * m.userData.orbR);
+      m.rotation.x += 0.01 * m.userData.spin;
+      m.rotation.y += 0.014 * m.userData.spin;
+    });
+    depthRings.forEach((r, i) => { r.rotation.z = t * (0.15 + i * 0.05); });
     groups.clouds.forEach((c) => {
       c.position.x += c.userData.sp * 0.01;
       if (c.position.x > 26) c.position.x = -26;

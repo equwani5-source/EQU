@@ -52,7 +52,7 @@ export default function HomePage() {
   </div></section>`);
   const catGrid = cats.querySelector('.cat-grid');
   CATEGORIES.forEach((c, i) => {
-    catGrid.appendChild(el(`<a class="cat-card reveal d${(i%4)+1}" href="#/shop?category=${c.slug}" style="background:linear-gradient(160deg, ${c.color}, ${shadeMix(c.color)})">
+    catGrid.appendChild(el(`<a class="cat-card reveal d${(i%4)+1}" data-tilt href="#/shop?category=${c.slug}" style="background:linear-gradient(160deg, ${c.color}, ${shadeMix(c.color)})">
       <span class="emoji">${c.emoji}</span>
       <h3>${c.name}</h3><p>${c.blurb}</p>
     </a>`));
@@ -110,7 +110,7 @@ export default function HomePage() {
   const collGrid = coll.querySelector('.coll-grid');
   COLLECTIONS.forEach((c, i) => {
     const count = byCollection(c.slug).length;
-    collGrid.appendChild(el(`<a class="coll-card reveal d${i+1}" href="#/shop?collection=${c.slug}" style="background:${c.grad}">
+    collGrid.appendChild(el(`<a class="coll-card reveal d${i+1}" data-tilt href="#/shop?collection=${c.slug}" style="background:${c.grad}">
       <span class="emoji">${c.emoji}</span>
       <div class="coll-card__body">
         <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">${count} styles</span>

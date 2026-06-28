@@ -708,3 +708,101 @@ img { image-rendering: auto; }
   body::after { animation: none; }
   .chat-fab::after { animation: none; }
 }
+
+
+/* ============================================================
+   ✨✨✨ PREMIUM POLISH — pass 3 (editorial finish)
+   ============================================================ */
+
+/* Tighter, more editorial heading scale */
+.head h2 { font-weight: 800; }
+.head .eyebrow { font-size: .74rem; padding: .45rem 1rem; }
+.section__head .head h2 { font-size: clamp(1.7rem, 3.4vw, 2.5rem); }
+
+/* Product card: refined body rhythm + clearer hierarchy */
+.pcard__body { padding: 1.05rem 1.15rem 1.25rem; gap: .3rem; }
+.pcard__title { font-size: 1.06rem; line-height: 1.25; }
+.pcard__rating { font-size: .78rem; gap: .3rem; }
+.pcard__cat { font-size: .68rem; }
+.pcard__price { margin-top: .35rem; align-items: baseline; }
+.pcard__price .now { font-size: 1.28rem; }
+.pcard__swatches { margin-top: .55rem; }
+.pcard__swatches .swatch { width: 17px; height: 17px; }
+.pcard__quick .btn { backdrop-filter: blur(4px); font-weight: 700; }
+
+/* Badges: tidy, glassy, consistent */
+.pcard__badges { gap: 5px; }
+.badge { padding: .3rem .55rem; font-size: .64rem; border: 1px solid rgba(255,255,255,.35); }
+
+/* Wishlist heart: gentle pop */
+.pcard__fav { transition: transform .25s cubic-bezier(.2,1.5,.4,1), background .25s; }
+.pcard__fav.active { animation: heartPop .35s cubic-bezier(.2,1.6,.4,1); }
+@keyframes heartPop { 0%{transform:scale(.7)} 60%{transform:scale(1.25)} 100%{transform:scale(1)} }
+
+/* Hero: refined CTA + animated scroll cue (mouse shape) */
+.hero__sub { line-height: 1.55; }
+.hero__stats { gap: 2.2rem; }
+.hero__stats > div { position: relative; }
+.hero__stats > div + div::before { content: ""; position: absolute; left: -1.1rem; top: 50%; transform: translateY(-50%); width: 1px; height: 34px; background: linear-gradient(rgba(108,76,241,0), rgba(108,76,241,.35), rgba(108,76,241,0)); }
+.hero__scroll { display: inline-flex; flex-direction: column; align-items: center; gap: .4rem; }
+.hero__scroll::before { content: ""; width: 22px; height: 36px; border: 2px solid var(--grape-deep); border-radius: 14px; opacity: .7; background:
+  radial-gradient(circle at 50% 22%, var(--grape-deep) 0 3px, transparent 4px); animation: scrollDot 1.8s ease-in-out infinite; }
+@keyframes scrollDot { 0%,100%{ background-position: 50% 22%; } 50%{ background-position: 50% 60%; } }
+
+/* Trust marquee: glassier dividers */
+.trust__row span { position: relative; }
+.trust { box-shadow: 0 10px 30px rgba(108,76,241,.25), inset 0 1px 0 rgba(255,255,255,.25); }
+
+/* Testimonials: elegant quote mark */
+.tcard { position: relative; }
+.tcard::before { content: "\201C"; position: absolute; top: -6px; right: 18px; font-family: var(--font-display); font-size: 5rem; line-height: 1; color: rgba(108,76,241,.12); }
+.tcard__text { position: relative; z-index: 1; }
+
+/* Instagram tiles: glossy + tag */
+.ig-tile { box-shadow: 0 12px 28px rgba(29,18,64,.12); border: 1px solid rgba(255,255,255,.3); }
+.ig-tile::before { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255,255,255,.3), transparent 50%); pointer-events: none; }
+
+/* Collection / category card text legibility */
+.coll-card h3, .cat-card h3 { text-shadow: 0 2px 12px rgba(0,0,0,.18); }
+.coll-card p, .cat-card p { text-shadow: 0 1px 8px rgba(0,0,0,.18); }
+
+/* Newsletter: premium input + button row */
+.news input:focus { box-shadow: 0 0 0 4px rgba(255,255,255,.35); }
+.news { box-shadow: 0 30px 70px rgba(108,76,241,.30), inset 0 1px 0 rgba(255,255,255,.4); }
+
+/* Flash sale timer units: glossy */
+.flash__unit { box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 8px 20px rgba(0,0,0,.18); }
+.flash { box-shadow: 0 30px 70px rgba(29,18,64,.30); }
+
+/* Drawer footer CTA emphasis */
+.drawer__foot .btn--block { box-shadow: 0 14px 30px rgba(108,76,241,.35); }
+
+/* Breadcrumb spacing */
+.breadcrumb { gap: .45rem; font-weight: 500; }
+.breadcrumb strong { color: var(--ink); }
+
+/* Section divider flourish between major blocks */
+.section + .section { position: relative; }
+
+/* Smooth image fade-in when photos load */
+.pcard__photo, .cart-line__media img { animation: imgFade .5s ease; }
+@keyframes imgFade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Mobile nav: premium links */
+.mobile-nav__panel { border-top-left-radius: 22px; border-bottom-left-radius: 22px; }
+.mobile-nav a { transition: background .2s, transform .15s, color .2s; }
+.mobile-nav a:active { transform: scale(.98); }
+
+/* Slightly softer card radius consistency on large screens */
+@media (min-width: 900px) { .pcard__media { aspect-ratio: 4/5; } }
+
+/* Refined sold-out look */
+.pcard.is-soldout .pcard__title { color: var(--ink-soft); }
+
+/* Buttons inside dark sections keep crisp text */
+.flash .btn, .news .btn { text-shadow: 0 1px 1px rgba(0,0,0,.12); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__scroll::before { animation: none; }
+  .pcard__photo, .cart-line__media img { animation: none; }
+}
